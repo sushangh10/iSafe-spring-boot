@@ -1,0 +1,6 @@
+
+// 下载mvnw
+mvn -N io.takari:maven:0.7.6:wrapper -Dmaven=3.3.3
+
+// 修改.mvn/wrapper/maven-wrapper.properties仓库到aliyun仓库
+

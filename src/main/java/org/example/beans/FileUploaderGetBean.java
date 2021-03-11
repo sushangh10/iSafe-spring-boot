@@ -1,5 +1,7 @@
 package org.example.beans;
 
+import java.util.ArrayList;
+
 /**
  * @Author sushanghai
  * @Date 2021/3/8
@@ -7,7 +9,7 @@ package org.example.beans;
 public class FileUploaderGetBean {
 
     private boolean skipUpload;
-    private int[] existChunks;
+    private ArrayList<Integer> existChunks;
 
     public boolean isSkipUpload() {
         return skipUpload;
@@ -17,11 +19,11 @@ public class FileUploaderGetBean {
         this.skipUpload = skipUpload;
     }
 
-    public int[] getExistChunks() {
+    public ArrayList<Integer> getExistChunks() {
         return existChunks;
     }
 
-    public void setExistChunks(int[] existChunks) {
+    public void setExistChunks(ArrayList<Integer> existChunks) {
         this.existChunks = existChunks;
     }
 }

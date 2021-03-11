@@ -32,7 +32,9 @@ export default {
         chunkSize: 10 * 1024 * 1024,
         forceChunkSize: true, // 强制chunk小于chunkSize 否则可能是chunkSize - 2*chunkSize之间的大小
         simultaneousUploads: 8, // 并发接口数
-        query: {}, // 额外传递的form表单中参数
+        query: {
+          destinationPath: 'D:\\FileReveiver'
+        }, // 额外传递的form表单中参数
         method: 'multipart', // 表单类型
         uploadMethod: 'POST', // 上传用的HTTP接口方法
         maxChunkRetries: 3, // 每个切片post的最大重试次数

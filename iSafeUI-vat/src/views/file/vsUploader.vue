@@ -5,6 +5,7 @@
       class="uploader-example"
       :options="options"
       :auto-start="false"
+      @file-success="onFileSuccess"
     >
       <uploader-unsupport />
       <uploader-drop>
@@ -19,6 +20,7 @@
 <script>
 import Vue from 'vue'
 import uploader from 'vue-simple-uploader'
+import { Message } from 'element-ui'
 
 Vue.use(uploader)
 
@@ -63,6 +65,9 @@ export default {
   watch: {
   },
   methods: {
+    onFileSuccess() {
+      Message.success('success')
+    }
   }
 }
 </script>

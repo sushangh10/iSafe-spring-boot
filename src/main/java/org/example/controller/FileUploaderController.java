@@ -4,18 +4,23 @@ import org.example.beans.FileUploaderGetBean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
+import javax.servlet.http.HttpServletRequest;
 
 
 /**
@@ -66,14 +71,106 @@ public class FileUploaderController {
     }
 
     @RequestMapping(value = "/api/fileupload", method = RequestMethod.POST)
-    private ResponseEntity fileUploadPost(@RequestParam Map<String, Object> requestMap) {
-        Iterator mapIterator = requestMap.keySet().iterator();
-        while (mapIterator.hasNext()) {
-            Object key = mapIterator.next();
-            System.out.println("[get] key: " + key + "; value: " + requestMap.get(key));
+    private ResponseEntity fileUploadPost(HttpServletRequest request) throws IOException {
+        MultipartFile file = ((MultipartHttpServletRequest) request).getFile("file");
+        String fileChunkName = request.getParameter("filename") + "-" + request.getParameter("chunkNumber");
+        String fileDirectory = request.getParameter("destinationPath");
+        String absDestinationPath = Paths.get(fileDirectory, fileChunkName).toString();
+        File fileChunk = new File(absDestinationPath);
+        FileOutputStream fileOutputStream = new FileOutputStream(fileChunk);
+        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
+        bufferedOutputStream.write(file.getBytes());
+        bufferedOutputStream.flush();
+        bufferedOutputStream.close();
+        System.out.println(request.getParameter("chunkNumber"));
+        System.out.println(request.getParameter("totalChunks"));
+        if (request.getParameter("chunkNumber") == request.getParameter("totalChunks")) {
+            System.out.println("Start Merge");
+            this.mergeChunks(fileDirectory, request.getParameter("filename"), Integer.parseInt(request.getParameter("totalChunks")), Integer.parseInt(request.getParameter("chunkSize")));
         }
-        return ResponseEntity.status(201).body("received and return 201");
+        return ResponseEntity.status(201).body("received and saved, return 201");
     }
+
+    @RequestMapping(value = "/api/fileupload", method = RequestMethod.PUT)
+    private ResponseEntity fileUploadPut(@RequestParam Map<String, Object> requestMap) throws IOException {
+        System.out.println("Start Merge");
+        boolean result = this.mergeChunks(
+                requestMap.get("destinationPath").toString(),
+                requestMap.get("filename").toString(),
+                Integer.parseInt(requestMap.get("totalChunks").toString()),
+                Integer.parseInt(requestMap.get("chunkSize").toString())
+        );
+        if (result) {
+            return ResponseEntity.status(200).body("received and saved, return 200");
+        } else {
+            return ResponseEntity.status(400).body("received and failed to saved, return 400");
+        }
+    }
+
+    private boolean mergeChunks(String dir, String filename, int totalChunks, int chunkSize) throws IOException {
+        String fileAbsName = Paths.get(dir, filename).toString();
+        File file = new File(fileAbsName);
+        FileOutputStream fileOutputStream = new FileOutputStream(file);
+        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream((fileOutputStream));
+        byte[] bytes = new byte[chunkSize];
+        for (int i = 1; i < totalChunks+1; i++) {
+            String chunkAbsName = Paths.get(fileAbsName + "-" + i).toString();
+            System.out.println("writing file: " + chunkAbsName);
+            File chunkFile = new File(chunkAbsName);
+            FileInputStream fileInputStream = new FileInputStream(chunkFile);
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+            int count;
+            while ( (count = bufferedInputStream.read(bytes)) > 0) {
+                bufferedOutputStream.write(bytes, 0, count);
+            }
+            bufferedInputStream.close();
+            chunkFile.delete();
+        }
+        bufferedOutputStream.flush();
+        bufferedOutputStream.close();
+        return true;
+    }
+
+//    @RequestMapping(value = "/api/fileupload", method = RequestMethod.POST)
+//    private ResponseEntity fileUploadPost(@RequestParam("file") MultipartFile file) {
+//        try {
+//            BufferedOutputStream out = new BufferedOutputStream(
+//                    new FileOutputStream(new File(
+//                            file.getOriginalFilename())));
+//            System.out.println(file.getName());
+//            out.write(file.getBytes());
+//            out.flush();
+//            out.close();
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(403).body("received and saved forbidden, return 403");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(403).body("received and saved failed, return 400");
+//        }
+//        return ResponseEntity.status(201).body("received and saved, return 201");
+//    }
+
+//    @RequestMapping(value = "/api/fileupload", method = RequestMethod.POST)
+//    private ResponseEntity fileUploadPost(@RequestParam Map<String, Object> requestMap) {
+////        Iterator mapIterator = requestMap.keySet().iterator();
+////        while (mapIterator.hasNext()) {
+////            Object key = mapIterator.next();
+////            System.out.println("[get] key: " + key + "; value: " + requestMap.get(key));
+////        }
+//        String sliceFileName = requestMap.get("filename").toString() + "-" + requestMap.get("chunkNumber").toString();
+//        try {
+//            BufferedOutputStream outputStream = new BufferedOutputStream(
+//                    new FileOutputStream(new File(
+//                            sliceFileName)));
+//            outputStream.write(requestMap.get());
+//
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(403).body("received and return 403 cause file no found");
+//        }
+//        return ResponseEntity.status(201).body("received and saved, return 201");
+//    }
 
     /**
      * check whether file is exist
